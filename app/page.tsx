@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, MapPin, ChevronDown, Filter, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { JobCard } from '@/components/job-card';
 import { CreateJobModal } from '@/components/create-job-modal';
 import { Header } from '@/components/header';
+import { databases, ID } from '../appwrite/config';
+
+const DB_ID = '6859032900307d7309b5';
+const COLLECTION_ID = '68590faa0034d0c86c7b';
+
+
 
 interface Job {
   id: string;
@@ -25,153 +31,94 @@ interface Job {
   logo: string;
 }
 
-const mockJobs: Job[] = [
-  {
-    id: '1',
-    title: 'Full Stack Developer',
-    company: 'Amazon',
-    location: 'Chennai',
-    type: 'FullTime',
-    experience: '2+ Yr Exp',
-    salary: '₹50K - ₹80K',
-    isRemote: true,
-    postedAgo: '24h Ago',
-    description: 'A user-friendly interface lets you browse stunning photos and videos.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg'
-  },
-  {
-    id: '2',
-    title: 'Node.js Developer',
-    company: 'Tesla',
-    location: 'Delhi',
-    type: 'FullTime',
-    experience: '1-3 Yr Exp',
-    salary: '₹60K - ₹90K',
-    isRemote: true,
-    postedAgo: '24h Ago',
-    description: 'A user-friendly interface lets you browse stunning photos and videos.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/b/bd/Tesla_Motors.svg'
-  },
-  {
-    id: '3',
-    title: 'UX/UI Designer',
-    company: 'Firefox',
-    location: 'Mumbai',
-    type: 'Contract',
-    experience: '1-3 Yr Exp',
-    salary: '₹40K - ₹70K',
-    isRemote: false,
-    postedAgo: '24h Ago',
-    description: 'A user-friendly interface lets you browse stunning photos and videos.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg'
-  },
-  {
-    id: '4',
-    title: 'Full Stack Developer',
-    company: 'Amazon',
-    location: 'Bangalore',
-    type: 'FullTime',
-    experience: '3+ Yr Exp',
-    salary: '₹70K - ₹100K',
-    isRemote: true,
-    postedAgo: '24h Ago',
-    description: 'A user-friendly interface lets you browse stunning photos and videos.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg'
-  },
-  {
-    id: '5',
-    title: 'Node.js Developer',
-    company: 'Tesla',
-    location: 'Hyderabad',
-    type: 'PartTime',
-    experience: '1-3 Yr Exp',
-    salary: '₹45K - ₹75K',
-    isRemote: true,
-    postedAgo: '24h Ago',
-    description: 'A user-friendly interface lets you browse stunning photos and videos.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/b/bd/Tesla_Motors.svg'
-  },
-  {
-    id: '6',
-    title: 'UX/UI Designer',
-    company: 'Firefox',
-    location: 'Pune',
-    type: 'Internship',
-    experience: '0-1 Yr Exp',
-    salary: '₹25K - ₹45K',
-    isRemote: false,
-    postedAgo: '24h Ago',
-    description: 'A user-friendly interface lets you browse stunning photos and videos.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg'
-  },
-  {
-    id: '7',
-    title: 'Full Stack Developer',
-    company: 'Amazon',
-    location: 'Noida',
-    type: 'Contract',
-    experience: '2+ Yr Exp',
-    salary: '₹55K - ₹85K',
-    isRemote: true,
-    postedAgo: '24h Ago',
-    description: 'A user-friendly interface lets you browse stunning photos and videos.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg'
-  },
-  {
-    id: '8',
-    title: 'Node.js Developer',
-    company: 'Tesla',
-    location: 'Kolkata',
-    type: 'FullTime',
-    experience: '1-3 Yr Exp',
-    salary: '₹50K - ₹80K',
-    isRemote: true,
-    postedAgo: '24h Ago',
-    description: 'A user-friendly interface lets you browse stunning photos and videos.',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/b/bd/Tesla_Motors.svg'
-  }
-];
-
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedJobType, setSelectedJobType] = useState('');
   const [salaryRange, setSalaryRange] = useState([25, 100]);
   const [isCreateJobOpen, setIsCreateJobOpen] = useState(false);
-  const [jobs, setJobs] = useState<Job[]>(mockJobs);
+  const [jobs, setJobs] = useState<Job[]>([]); // Remove mockJobs — will be fetched
 
+  // ✅ move useEffect here
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const response = await databases.listDocuments(DB_ID, COLLECTION_ID);
+        const jobsFromAppwrite = response.documents.map((doc: any) => ({
+          id: doc.$id,
+          title: doc.title,
+          company: doc.company,
+          location: doc.location,
+          type: doc.type,
+          experience: doc.experience,
+          salary: doc.salary,
+          isRemote: doc.isRemote,
+          postedAgo: doc.postedAgo,
+          description: doc.description,
+          logo: doc.logo
+        }));
+        setJobs(jobsFromAppwrite);
+      } catch (error) {
+        console.error("Failed to fetch jobs", error);
+      }
+    };
+    fetchJobs();
+  }, []);
+
+  // ✅ now this is safe
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          job.company.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesLocation = !selectedLocation || selectedLocation === 'all' || job.location === selectedLocation;
     const matchesJobType = !selectedJobType || selectedJobType === 'all' || job.type === selectedJobType;
-    
-    // Extract salary numbers for filtering
+
     const salaryNumbers = job.salary.match(/\d+/g);
-    const minSalary = salaryNumbers ? parseInt(salaryNumbers[0]) : 0;
-    const maxSalary = salaryNumbers ? parseInt(salaryNumbers[1]) : 100;
+    const minSalary = salaryNumbers ? parseInt(salaryNumbers[0]) / 1000 : 0;
+    const maxSalary = salaryNumbers ? parseInt(salaryNumbers[1]) / 1000 : 100;
     const matchesSalary = minSalary >= salaryRange[0] && maxSalary <= salaryRange[1];
+
 
     return matchesSearch && matchesLocation && matchesJobType && matchesSalary;
   });
-
-  const handleCreateJob = (jobData: any) => {
-    const newJob: Job = {
-      id: Date.now().toString(),
-      title: jobData.jobTitle,
-      company: jobData.companyName,
-      location: jobData.location,
-      type: jobData.jobType,
-      experience: '1-3 Yr Exp',
-      salary: jobData.salaryRange,
-      isRemote: true,
-      postedAgo: 'Just now',
-      description: jobData.jobDescription,
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg'
-    };
-    setJobs([newJob, ...jobs]);
-    setIsCreateJobOpen(false);
+  const handleCreateJob = async (jobData: any) => {
+    try {
+      const newJob = {
+        title: jobData.jobTitle,
+        company: jobData.companyName,
+        location: jobData.location,
+        type: jobData.jobType,
+        experience: '1-3 Yr Exp',
+        salary: jobData.salaryRange,
+        isRemote: true,
+        postedAgo: 'Just now',
+        description: jobData.jobDescription,
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg'
+      };
+  
+      const created = await databases.createDocument(DB_ID, COLLECTION_ID, ID.unique(), newJob);
+      setJobs(prev => [
+        {
+          id: created.$id,
+          title: created.title,
+          company: created.company,
+          location: created.location,
+          type: created.type,
+          experience: created.experience,
+          salary: created.salary,
+          isRemote: created.isRemote,
+          postedAgo: created.postedAgo,
+          description: created.description,
+          logo: created.logo
+        },
+        ...prev
+      ]);
+      
+      setIsCreateJobOpen(false);
+    } catch (error) {
+      console.error("Error creating job", error);
+    }
   };
+  
 
   return (
     <div className="min-h-screen bg-gray-50">
