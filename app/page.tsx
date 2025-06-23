@@ -95,29 +95,31 @@ export default function Home() {
         logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg'
       };
   
-      const created = await databases.createDocument(DB_ID, COLLECTION_ID, ID.unique(), newJob);
-      setJobs(prev => [
-        {
-          id: created.$id,
-          title: created.title,
-          company: created.company,
-          location: created.location,
-          type: created.type,
-          experience: created.experience,
-          salary: created.salary,
-          isRemote: created.isRemote,
-          postedAgo: created.postedAgo,
-          description: created.description,
-          logo: created.logo
-        },
-        ...prev
-      ]);
-      
+      await databases.createDocument(DB_ID, COLLECTION_ID, ID.unique(), newJob);
+  
+      // ✅ Re-fetch jobs from Appwrite after creating
+      const response = await databases.listDocuments(DB_ID, COLLECTION_ID);
+      const jobsFromAppwrite = response.documents.map((doc: any) => ({
+        id: doc.$id,
+        title: doc.title,
+        company: doc.company,
+        location: doc.location,
+        type: doc.type,
+        experience: doc.experience,
+        salary: doc.salary,
+        isRemote: doc.isRemote,
+        postedAgo: doc.postedAgo,
+        description: doc.description,
+        logo: doc.logo
+      }));
+  
+      setJobs(jobsFromAppwrite);
       setIsCreateJobOpen(false);
     } catch (error) {
       console.error("Error creating job", error);
     }
   };
+  
   
 
   return (
