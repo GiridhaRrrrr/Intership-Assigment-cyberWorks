@@ -1,24 +1,20 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Search, MapPin, ChevronDown, Filter, Plus } from 'lucide-react';
+import { Search, MapPin, Filter, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
 import { JobCard } from '@/components/job-card';
 import { CreateJobModal } from '@/components/create-job-modal';
 import { Header } from '@/components/header';
 import { databases, ID } from '../appwrite/config';
-import { Query } from 'appwrite';
+import { Query } from 'appwrite'; 
 
 
 const DB_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID!;
-
-
-
 
 interface Job {
   id: string;
@@ -40,15 +36,16 @@ export default function Home() {
   const [selectedJobType, setSelectedJobType] = useState('');
   const [salaryRange, setSalaryRange] = useState([25, 100]);
   const [isCreateJobOpen, setIsCreateJobOpen] = useState(false);
-  const [jobs, setJobs] = useState<Job[]>([]); // Remove mockJobs — will be fetched
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ move useEffect here
   useEffect(() => {
     const fetchJobs = async () => {
+      setLoading(true);
       try {
         const response = await databases.listDocuments(DB_ID, COLLECTION_ID, [
           Query.orderDesc('$createdAt')
-        ]);        
+        ]);
         const jobsFromAppwrite = response.documents.map((doc: any) => ({
           id: doc.$id,
           title: doc.title,
@@ -65,15 +62,16 @@ export default function Home() {
         setJobs(jobsFromAppwrite);
       } catch (error) {
         console.error("Failed to fetch jobs", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchJobs();
   }, []);
 
-  // ✅ now this is safe
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.company.toLowerCase().includes(searchTerm.toLowerCase());
+      job.company.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesLocation = !selectedLocation || selectedLocation === 'all' || job.location === selectedLocation;
     const matchesJobType = !selectedJobType || selectedJobType === 'all' || job.type === selectedJobType;
 
@@ -82,9 +80,9 @@ export default function Home() {
     const maxSalary = salaryNumbers ? parseInt(salaryNumbers[1]) / 1000 : 100;
     const matchesSalary = minSalary >= salaryRange[0] && maxSalary <= salaryRange[1];
 
-
     return matchesSearch && matchesLocation && matchesJobType && matchesSalary;
   });
+
   const handleCreateJob = async (jobData: any) => {
     try {
       const newJob = {
@@ -99,11 +97,12 @@ export default function Home() {
         description: jobData.jobDescription,
         logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg'
       };
-  
+
       await databases.createDocument(DB_ID, COLLECTION_ID, ID.unique(), newJob);
-  
-      // ✅ Re-fetch jobs from Appwrite after creating
-      const response = await databases.listDocuments(DB_ID, COLLECTION_ID);
+
+      const response = await databases.listDocuments(DB_ID, COLLECTION_ID, [
+        Query.orderDesc('$createdAt')
+      ]);
       const jobsFromAppwrite = response.documents.map((doc: any) => ({
         id: doc.$id,
         title: doc.title,
@@ -117,25 +116,20 @@ export default function Home() {
         description: doc.description,
         logo: doc.logo
       }));
-  
+
       setJobs(jobsFromAppwrite);
       setIsCreateJobOpen(false);
     } catch (error) {
       console.error("Error creating job", error);
     }
   };
-  
-  
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
       <main className="container mx-auto px-4 py-8">
-        {/* Filters Section */}
         <div className="bg-white rounded-2xl shadow-sm border p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -146,7 +140,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Location */}
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Select value={selectedLocation} onValueChange={setSelectedLocation}>
@@ -167,8 +160,7 @@ export default function Home() {
               </Select>
             </div>
 
-            {/* Job Type */}
-            <div className="relative">
+            <div className="relative" >
               <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Select value={selectedJobType} onValueChange={setSelectedJobType}>
                 <SelectTrigger className="pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500">
@@ -184,7 +176,6 @@ export default function Home() {
               </Select>
             </div>
 
-            {/* Salary Range */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-700">Salary Per Month</span>
@@ -202,13 +193,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Header with Create Job Button */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Job Opportunities</h1>
             <p className="text-gray-600 mt-1">Showing {filteredJobs.length} results</p>
           </div>
-          <Button 
+          <Button
             onClick={() => setIsCreateJobOpen(true)}
             className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-medium"
           >
@@ -217,26 +207,34 @@ export default function Home() {
           </Button>
         </div>
 
-        {/* Jobs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredJobs.map((job) => (
-            <JobCard key={job.id} job={job} />
-          ))}
-        </div>
-
-        {filteredJobs.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-              <Search className="h-8 w-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
-            <p className="text-gray-500">Try adjusting your filters to see more results</p>
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="w-10 h-10 border-4 border-purple-500 border-dashed rounded-full animate-spin mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading jobs...</p>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredJobs.map((job) => (
+                <JobCard key={job.id} job={job} />
+              ))}
+            </div>
+
+            {filteredJobs.length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                  <Search className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
+                <p className="text-gray-500">Try adjusting your filters to see more results</p>
+              </div>
+            )}
+          </>
         )}
       </main>
 
-      <CreateJobModal 
-        open={isCreateJobOpen} 
+      <CreateJobModal
+        open={isCreateJobOpen}
         onClose={() => setIsCreateJobOpen(false)}
         onSubmit={handleCreateJob}
       />
