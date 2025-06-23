@@ -11,9 +11,12 @@ import { JobCard } from '@/components/job-card';
 import { CreateJobModal } from '@/components/create-job-modal';
 import { Header } from '@/components/header';
 import { databases, ID } from '../appwrite/config';
+import { Query } from 'appwrite';
 
-const DB_ID = '6859032900307d7309b5';
-const COLLECTION_ID = '68590faa0034d0c86c7b';
+
+const DB_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+const COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID!;
+
 
 
 
@@ -43,7 +46,9 @@ export default function Home() {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await databases.listDocuments(DB_ID, COLLECTION_ID);
+        const response = await databases.listDocuments(DB_ID, COLLECTION_ID, [
+          Query.orderDesc('$createdAt')
+        ]);        
         const jobsFromAppwrite = response.documents.map((doc: any) => ({
           id: doc.$id,
           title: doc.title,
