@@ -12,7 +12,6 @@ import { Header } from '@/components/header';
 import { databases, ID } from '../appwrite/config';
 import { Query } from 'appwrite'; 
 
-
 const DB_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_ID!;
 
@@ -34,7 +33,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedJobType, setSelectedJobType] = useState('');
-  const [salaryRange, setSalaryRange] = useState([25, 100]);
+  const [salaryRange, setSalaryRange] = useState([20, 100]);
   const [isCreateJobOpen, setIsCreateJobOpen] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,24 +125,28 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="container mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-sm border p-6 mb-8">
+      <Header onCreateJobClick={() => setIsCreateJobOpen(true)} />
+      
+      <main className="container mx-auto px-4 pb-8">
+        {/* Search and Filter Section */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Search Input */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search by Job Title, Role..."
+                placeholder="Search By Job Title, Role..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                className="pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 bg-gray-50"
               />
             </div>
 
+            {/* Location Select */}
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
               <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                <SelectTrigger className="pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                <SelectTrigger className="pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 bg-gray-50">
                   <SelectValue placeholder="Preferred Location" />
                 </SelectTrigger>
                 <SelectContent>
@@ -160,11 +163,12 @@ export default function Home() {
               </Select>
             </div>
 
-            <div className="relative" >
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            {/* Job Type Select */}
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
               <Select value={selectedJobType} onValueChange={setSelectedJobType}>
-                <SelectTrigger className="pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder="Job Type" />
+                <SelectTrigger className="pl-10 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 bg-gray-50">
+                  <SelectValue placeholder="Job type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
@@ -176,37 +180,28 @@ export default function Home() {
               </Select>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Salary Per Month</span>
-                <span className="text-sm text-gray-500">₹{salaryRange[0]}K - ₹{salaryRange[1]}K</span>
-              </div>
+
+        {/* Salary Range */}
+        <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-700">Salary Per Month</span>
+              <span className="text-sm text-gray-900 font-medium">₹{salaryRange[0]}k - ₹{salaryRange[1]}k</span>
+            </div>
+            <div className="px-2">
               <Slider
                 value={salaryRange}
                 onValueChange={setSalaryRange}
-                max={150}
+                max={100}
                 min={20}
                 step={5}
                 className="w-full"
               />
             </div>
+        </div>
           </div>
         </div>
 
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Job Opportunities</h1>
-            <p className="text-gray-600 mt-1">Showing {filteredJobs.length} results</p>
-          </div>
-          <Button
-            onClick={() => setIsCreateJobOpen(true)}
-            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-medium"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Job
-          </Button>
-        </div>
-
+        {/* Jobs Grid */}
         {loading ? (
           <div className="text-center py-16">
             <div className="w-10 h-10 border-4 border-purple-500 border-dashed rounded-full animate-spin mx-auto"></div>
