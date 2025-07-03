@@ -17,9 +17,10 @@ export function Header({ onCreateJobClick }: HeaderProps) {
         <header className="bg-white rounded-3xl shadow-md border border-gray-100">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">
             <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center transform rotate-45">
+              {/* <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center transform rotate-45">
                 <div className="w-5 h-5 bg-white rounded-lg transform -rotate-45"></div>
-              </div>
+              </div> */}
+              <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain rounded-xl" />
             </div>
 
             <div className="md:hidden">
